@@ -1,0 +1,7 @@
+**/*.jpg
+Mask_RCNN/**
+.ipynb_checkpoints/**
+__pycache__/**
+*.csv
+*.ipynb
+*.zip
