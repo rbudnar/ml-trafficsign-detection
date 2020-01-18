@@ -1,24 +1,17 @@
-from mrcnn.config import Config
-from mrcnn.model import MaskRCNN
-from mrcnn.model import mold_image
 from mrcnn.utils import Dataset
 from numpy import zeros
 from numpy import asarray
-from numpy import expand_dims
-from os import listdir
-import utils
 
 
 class TrafficSignDataset(Dataset):
     # load the dataset definitions
-    def load_dataset(self, dataset_dir, df, classes, is_train=True):
+    def load_dataset(self, dataset_dir, classes, df):
         self.df = df
-        #self.df = utils.load(path_to_csv)
-        images_dir = dataset_dir + ("/train/" if is_train else "/test/")
+        assert self.df is not None
+        images_dir = dataset_dir + "/train/"
 
-        # classes = utils.determine_classes(self.df)
         for i in range(classes.shape[0]):
-            self.add_class("dataset", i+1, classes[i])
+            self.add_class("dataset", i + 1, classes[i])
 
         for (index, data) in self.df.iterrows():
             filename = data["image"]
@@ -43,7 +36,6 @@ class TrafficSignDataset(Dataset):
             endY = int(bbox["ymax"])
             coors = [startX, startY, endX, endY, data["category"]]
             boxes.append(coors)
-            print(coors)
         width = 2048
         height = 2048
         return boxes, width, height
@@ -52,7 +44,6 @@ class TrafficSignDataset(Dataset):
     def load_mask(self, image_id):
         # get details of image
         info = self.image_info[image_id]
-        print(info)
         boxes, w, h = self.extract_boxes(info)
         # create one array for all masks, each on a different channel
         masks = zeros([h, w, len(boxes)], dtype='uint8')
@@ -70,9 +61,3 @@ class TrafficSignDataset(Dataset):
     def image_reference(self, image_id):
         info = self.image_info[image_id]
         return info['path']
-
-
-class TrafficSignConfig(Config):
-    NAME = "trafficsign_config"
-    NUM_CLASSES = 1 + 150
-    STEPS_PER_EPOCH = 200

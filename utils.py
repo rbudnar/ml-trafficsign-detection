@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import ast
+from TrafficSignDataset import TrafficSignDataset
 
 
 def show_img(df, idx):
@@ -50,3 +51,10 @@ def determine_classes(df):
     # grab the category from each BB
     temp["category"] = temp["object"].apply(lambda x: x.get("category"))
     return temp["category"].unique()
+
+
+def prepare_dataset(df, classes):
+    dataset = TrafficSignDataset()
+    dataset.load_dataset(".", classes, df)
+    dataset.prepare()
+    return dataset
