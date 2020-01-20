@@ -8,14 +8,15 @@ class TrafficSignDataset(Dataset):
     def load_dataset(self, dataset_dir, classes, df):
         self.df = df
         assert self.df is not None
-        images_dir = dataset_dir + "/train/"
+        images_dir = dataset_dir
 
         for i in range(classes.shape[0]):
             self.add_class("dataset", i + 1, classes[i])
 
         for (index, data) in self.df.iterrows():
             filename = data["image"]
-            img_path = images_dir + filename
+            img_path = images_dir + "/" + filename
+            # print(img_path)
             # add to dataset
             self.add_image('dataset', image_id=index,
                            path=img_path, filename=filename)

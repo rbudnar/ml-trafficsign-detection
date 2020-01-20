@@ -1,7 +1,8 @@
 import cv2
-import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from os import listdir
+import numpy as np
 import ast
 from TrafficSignDataset import TrafficSignDataset
 
@@ -38,10 +39,11 @@ def draw_rect(img, data):
     cv2.rectangle(img, (startX, startY), (endX, endY), (0, 0, 255), 2)
 
 
-def load(path):
+def load(path, is_train=True):
     df = pd.read_csv(path, dtype={'object': object})
-    df["object"] = df["object"].apply(lambda x: ast.literal_eval(x))
-    df["counts"] = df["object"].apply(lambda x: len(x))
+    if is_train:
+        df["object"] = df["object"].apply(lambda x: ast.literal_eval(x))
+        df["counts"] = df["object"].apply(lambda x: len(x))
     return df
 
 
@@ -53,8 +55,29 @@ def determine_classes(df):
     return temp["category"].unique()
 
 
-def prepare_dataset(df, classes):
+def prepare_dataset(df, image_dir, classes):
     dataset = TrafficSignDataset()
-    dataset.load_dataset(".", classes, df)
+    dataset.load_dataset(image_dir, classes, df)
     dataset.prepare()
     return dataset
+
+
+def generate_test_file(input_dir, output_filename):
+    '''
+    Generates and saves a csv file to setup the TrafficSignDataset to run predictions against. 
+    This will not generate or store ground truth information in the file.
+
+    input_dir: Expects a directory with images labeled as CAX_TestXXXX.jpg
+    output_filename: Name of the file (no extension)
+
+    Result: this saves the resulting dataframe to a csv file in the current directory.
+    '''
+
+    files = np.array(listdir(input_dir))
+    df = pd.DataFrame(files, columns=["image"])
+    df["id"] = df["image"].apply(lambda x: x.split(".")[0])
+    df["id2"] = df["image"].apply(lambda t: int(
+        t.split(".")[0].split("CAX_Test")[1]))
+    df = df.sort_values("id2").drop(columns=["id2"])
+    df.head()
+    df.to_csv(f"{output_filename}.csv", index=False)

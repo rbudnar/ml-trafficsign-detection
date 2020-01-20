@@ -1,0 +1,10 @@
+STEPS_PER_EPOCH:
+  value: 5135
+LEARNING_RATE:
+  value: 0.001
+LEARNING_MOMENTUM:
+  value: 0.9
+WEIGHT_DECAY:
+  value: 0.0001
+EPOCHS:
+  value: 10

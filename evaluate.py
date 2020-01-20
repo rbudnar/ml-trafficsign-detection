@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 import utils
-from sklearn.model_selection import train_test_split
 from mrcnn.model import MaskRCNN
 from mrcnn.config import Config
 from mrcnn.model import load_image_gt
 from mrcnn.model import mold_image
 from utils import prepare_dataset
 from mrcnn.utils import compute_ap
+import argparse
 
 
 class PredictionConfig(Config):
@@ -18,11 +18,10 @@ class PredictionConfig(Config):
     IMAGES_PER_GPU = 1
 
 
-def evaluate_model(dataset, model, cfg):
+def evaluate_model(dataset, model, cfg, classes):
     APs = list()
     df = pd.DataFrame(columns=["image", "confidence",
                                "category", "xmin", "ymin", "xmax", "ymax"])
-    i = 0
     for image_id in dataset.image_ids:
         # load image, bounding boxes and masks for the image id
         image, _, gt_class_id, gt_bbox, gt_mask = load_image_gt(
@@ -32,48 +31,53 @@ def evaluate_model(dataset, model, cfg):
         # convert image into one sample
         sample = np.expand_dims(scaled_image, 0)
         # make prediction
-        yhat = model.detect(sample, verbose=1)
-        print(yhat)
+        yhat = model.detect(sample, verbose=0)
         # extract results for first sample
         r = yhat[0]
         # calculate statistics, including AP
         AP, _, _, _ = compute_ap(
             gt_bbox, gt_class_id, gt_mask, r["rois"], r["class_ids"], r["scores"], r['masks'])
         # store
-        APs.append(AP)
+        if AP is not None:
+            APs.append(AP)
         info = dataset.image_info[image_id]
-        print(image_id, AP, info)
+        print(image_id, AP)
         for j in range(len(r["rois"])):
-            # df.iloc[image_id] = [info["filename"], r["scores"][0]]
-            print(j)
             row = {"image": info["filename"],
                    "confidence": r["scores"][j],
-                   "category": r["class_ids"][j],
+                   "category": classes[r["class_ids"][j] + 1],
                    "xmin": r["rois"][j][0],
                    "ymin": r["rois"][j][1],
                    "xmax": r["rois"][j][2],
                    "ymax": r["rois"][j][3]}
             df = df.append(row, ignore_index=True)
-            i += 1
-        if i > 10:
-            break
     # calculate the mean AP across all images
-    df.to_csv("./results.csv")
+    df.to_csv("./results.csv", index=False)
     mAP = np.mean(APs)
     return mAP
 
 
-data = utils.load("train.csv")
-classes = utils.determine_classes(data)
+def run(train_csv, imagedir, modelpath):
+    train_data = utils.load(train_csv)
+    classes = utils.determine_classes(train_data)
 
-train_set = prepare_dataset(data, classes)
+    train_set = prepare_dataset(train_data, imagedir, classes)
 
-cfg = PredictionConfig()
-model = MaskRCNN(mode="inference", model_dir="./train", config=cfg)
-model.load_weights(
-    "./trafficsign_config20200116T0805/mask_rcnn_trafficsign_config_0005.h5", by_name=True)
-train_mAP = evaluate_model(train_set, model, cfg)
-# print("Train mAP: %.3f" % train_mAP)
-# evaluate model on test dataset
-# test_mAP = evaluate_model(valid_set, model, cfg)
-# print("Test mAP: %.3f" % test_mAP)
+    cfg = PredictionConfig()
+    model = MaskRCNN(mode="inference", model_dir=imagedir, config=cfg)
+    model.load_weights(modelpath, by_name=True)
+    train_mAP = evaluate_model(train_set, model, cfg, classes)
+    print("Train mAP: %.3f" % train_mAP)
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-m", "--modelpath", help="path and filename for model file to load",
+                    default="./trafficsign_config20200118T1111/mask_rcnn_trafficsign_config_0010.h5")
+    ap.add_argument("-d", "--imagedir",
+                    help="path to image directory.", default="./train")
+    ap.add_argument(
+        "-c", "--csv", help="path and filename to csv file from which the dataset will be built.", default="train.csv")
+
+    args = vars(ap.parse_args())
+    run(args["csv"], args["imagedir"], args["modelpath"])
