@@ -8,6 +8,7 @@ from mrcnn.model import mold_image
 from utils import prepare_dataset
 from mrcnn.utils import compute_ap
 import argparse
+import math
 
 
 class PredictionConfig(Config):
@@ -38,7 +39,7 @@ def evaluate_model(dataset, model, cfg, classes):
         AP, _, _, _ = compute_ap(
             gt_bbox, gt_class_id, gt_mask, r["rois"], r["class_ids"], r["scores"], r['masks'])
         # store
-        if AP is not None:
+        if not math.isnan(AP):
             APs.append(AP)
         info = dataset.image_info[image_id]
         print(image_id, AP)
