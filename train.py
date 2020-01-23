@@ -9,6 +9,7 @@ wandb = importlib.util.find_spec("wandb")
 wandb_found = wandb is not None
 
 if wandb_found:
+    import wandb
     from wandb.keras import WandbCallback
 
 
