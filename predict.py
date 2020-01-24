@@ -19,7 +19,7 @@ def plot_actual_vs_predicted(dataset, model, cfg, n_images=5):
     pyplot.show()
 
 
-def plot(dataset, model, cfg, i, img_id, n_images=1):
+def plot(dataset, model, cfg, classes, i, img_id, n_images=1):
     print(f"loading img_id {img_id}")
     print(dataset.image_info[img_id])
     image = dataset.load_image(img_id)
@@ -45,7 +45,8 @@ def plot(dataset, model, cfg, i, img_id, n_images=1):
     boxes, width, height = dataset.extract_boxes(dataset.image_info[img_id])
     for box in boxes:
         x1, y1, x2, y2, cat = box
-        add_box(x1, y1, x2, y2, ax, "blue")
+        print("ACT:", cat, y1, x1, y2, x2)
+        add_box(x1, y1, x2, y2, ax, cat, "blue")
 
     # get the context for drawing boxes
     pyplot.subplot(n_images, 2, i * 2 + 2)
@@ -57,12 +58,14 @@ def plot(dataset, model, cfg, i, img_id, n_images=1):
         pyplot.title('Predicted')
     ax2 = pyplot.gca()
     # plot each box
-    for box in yhat['rois']:
+    for (idx, box) in enumerate(yhat['rois']):
+        class_name = classes[yhat["class_ids"][idx] - 1]
         y1, x1, y2, x2 = box
-        add_box(x1, y1, x2, y2, ax2, "red")
+        print("PRED:", class_name, y1, x1, y2, x2)
+        add_box(x1, y1, x2, y2, ax2, class_name, "red")
 
 
-def add_box(x1, y1, x2, y2, ax, color):
+def add_box(x1, y1, x2, y2, ax, class_name, color):
     # x1, y1, x2, y2 = box
     # calculate width and height of the box
     width, height = x2 - x1, y2 - y1
@@ -70,6 +73,7 @@ def add_box(x1, y1, x2, y2, ax, color):
     rect = Rectangle((x1, y1), width, height, fill=False, color=color)
     # draw the box
     ax.add_patch(rect)
+    ax.text(x1, y1, class_name, color="yellow", fontsize=13)
 
 
 def run(csv, model_dir, model_file, img_name):
@@ -82,7 +86,7 @@ def run(csv, model_dir, model_file, img_name):
     model.load_weights(model_file, by_name=True)
 
     idx = data[data["image"] == img_name].index[0]
-    plot(train_set, model, cfg, 0, idx)
+    plot(train_set, model, cfg, classes, 0, idx)
     pyplot.show()
     # plot_actual_vs_predicted(train_set, model, cfg)
 
@@ -90,7 +94,7 @@ def run(csv, model_dir, model_file, img_name):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-m", "--modelpath", help="path and filename for model file to load",
-                    default="./trafficsign_config20200118T1111/mask_rcnn_trafficsign_config_0010.h5")
+                    default="./trafficsign_config20200121T0807/mask_rcnn_trafficsign_config_0010.h5")
     ap.add_argument("-d", "--imagedir",
                     help="path to image directory.", default="./train")
     ap.add_argument(

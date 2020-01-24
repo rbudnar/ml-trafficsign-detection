@@ -57,7 +57,7 @@ def run(csv, model_dir, model_file, img_name):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-m", "--modelpath", help="path and filename for model file to load",
-                    default="./trafficsign_config20200118T1111/mask_rcnn_trafficsign_config_0010.h5")
+                    default="./trafficsign_config20200121T0807/mask_rcnn_trafficsign_config_0010.h5")
     ap.add_argument("-d", "--imagedir",
                     help="path to image directory.", default="./test")
     ap.add_argument(
